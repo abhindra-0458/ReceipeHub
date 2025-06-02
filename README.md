@@ -39,7 +39,7 @@ RecipeHub is a collaborative platform for sharing and managing recipes. Users ca
 ## Running the Application
 1. Start the server:
    ```bash
-   npm start
+   npm run dev
    ```
 2. The application will be available at `http://localhost:3000`.
 
