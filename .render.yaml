@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: recipe-collab-app
+    env: node
+    plan: free
+    buildCommand: |
+      npm install
+      npm install --prefix client
+      npm run build --prefix client
+    startCommand: node server/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        value: mongodb://localhost:27017/recipehub
+      - key: CLIENT_URL
+        value: https://receipehub-yjud.onrender.com
