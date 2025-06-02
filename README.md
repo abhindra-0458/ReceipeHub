@@ -1,20 +1,3 @@
-
-
-
-          
-Let's explore the project structure to gather information for the README.
-        
-            
-toolName: view_folder
-            
-status: success
-          
-c:\PROJECTS\ReceipeHub
-          
-Here's a suggested README for your project:
-
----
-
 # RecipeHub
 
 RecipeHub is a collaborative platform for sharing and managing recipes. Users can create, edit, and collaborate on recipes, with features for public and private sharing.
