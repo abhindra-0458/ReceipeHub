@@ -6,12 +6,12 @@ const API_URL = 'http://localhost:5000/api/recipes';
 const authAxios = () => {
   const user = JSON.parse(localStorage.getItem('user'));
   const token = user?.token;
-  
+
   return axios.create({
     baseURL: API_URL,
     headers: {
       'Content-Type': 'application/json',
-      'x-auth-token': token
+      'Authorization': `Bearer ${token}`  // ✅ Fix is here
     }
   });
 };
@@ -42,13 +42,29 @@ const createRecipe = async (recipeData) => {
 
 // Update recipe
 const updateRecipe = async (id, recipeData) => {
-  const response = await authAxios().put(`/${id}`, recipeData);
+  const response = await authAxios().patch(`/${id}`, recipeData);
   return response.data;
 };
 
 // Delete recipe
 const deleteRecipe = async (id) => {
   const response = await authAxios().delete(`/${id}`);
+  return response.data;
+};
+
+// Add these new methods to recipeService
+const suggestEdit = async (recipeId, changes) => {
+  const response = await api.patch(`/api/recipes/${recipeId}`, changes);
+  return response.data;
+};
+
+const getPendingEdits = async (recipeId) => {
+  const response = await api.get(`/api/recipes/${recipeId}/pending-edits`);
+  return response.data;
+};
+
+const reviewEdit = async (recipeId, editId, status) => {
+  const response = await api.post(`/api/recipes/${recipeId}/pending-edits/${editId}/review`, { status });
   return response.data;
 };
 

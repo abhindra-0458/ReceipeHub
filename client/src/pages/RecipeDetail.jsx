@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import RecipeSteps from '../components/RecipeSteps';
 import recipeService from '../services/recipeService';
 import { scaleIngredients } from '../utils/recipeUtils';
 import { useAuth } from '../hooks/useAuth';
+import PendingEdits from '../components/PendingEdits';
 
 const RecipeDetail = () => {
   const { id } = useParams();
@@ -15,25 +16,25 @@ const RecipeDetail = () => {
   const [scaledIngredients, setScaledIngredients] = useState([]);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const fetchRecipe = async () => {
-      try {
-        const data = await recipeService.getRecipeById(id);
-        setRecipe(data);
-        setServings(data.servings);
-        setScaledIngredients(data.ingredients);
-        setLoading(false);
-      } catch (err) {
-        console.error(err);
-        setError('Failed to load recipe');
-        setLoading(false);
-      }
-    };
+  const fetchRecipe = useCallback(async () => {
+    try {
+      const data = await recipeService.getRecipeById(id);
+      setRecipe(data);
+      setServings(data.servings);
+      setScaledIngredients(data.ingredients);
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load recipe');
+      setLoading(false);
+    }
+  }, [id]);
 
+  useEffect(() => {
     if (isAuthenticated) {
       fetchRecipe();
     } else {
-      // For now, use dummy data
+      // Use dummy data
       const dummyRecipe = {
         _id: id,
         title: 'Chocolate Cake',
@@ -71,7 +72,7 @@ const RecipeDetail = () => {
         createdAt: '2023-06-15T10:30:00Z',
         updatedAt: '2023-06-16T14:45:00Z'
       };
-      
+
       setTimeout(() => {
         setRecipe(dummyRecipe);
         setServings(dummyRecipe.servings);
@@ -79,13 +80,11 @@ const RecipeDetail = () => {
         setLoading(false);
       }, 500);
     }
-  }, [id, isAuthenticated]);
+  }, [id, isAuthenticated, fetchRecipe]);
 
   const handleServingsChange = (newServings) => {
     if (newServings < 1) return;
-    
     const newIngredients = scaleIngredients(recipe.ingredients, recipe.servings, newServings);
-    
     setServings(newServings);
     setScaledIngredients(newIngredients);
   };
@@ -102,17 +101,9 @@ const RecipeDetail = () => {
     }
   };
 
-  if (loading) {
-    return <div className="loading">Loading recipe...</div>;
-  }
-
-  if (error) {
-    return <div className="error">{error}</div>;
-  }
-
-  if (!recipe) {
-    return <div className="not-found">Recipe not found</div>;
-  }
+  if (loading) return <div className="loading">Loading recipe...</div>;
+  if (error) return <div className="error">{error}</div>;
+  if (!recipe) return <div className="not-found">Recipe not found</div>;
 
   return (
     <div className="recipe-detail-page">
@@ -126,7 +117,7 @@ const RecipeDetail = () => {
         </div>
         <p className="recipe-description">{recipe.description}</p>
       </div>
-      
+
       <div className="recipe-info">
         <div className="info-item">
           <span className="info-label">Prep Time:</span>
@@ -143,20 +134,13 @@ const RecipeDetail = () => {
         <div className="info-item servings">
           <span className="info-label">Servings:</span>
           <div className="servings-control">
-            <button 
-              onClick={() => handleServingsChange(servings - 1)}
-              disabled={servings <= 1}
-            >
-              -
-            </button>
+            <button onClick={() => handleServingsChange(servings - 1)} disabled={servings <= 1}>-</button>
             <span>{servings}</span>
-            <button onClick={() => handleServingsChange(servings + 1)}>
-              +
-            </button>
+            <button onClick={() => handleServingsChange(servings + 1)}>+</button>
           </div>
         </div>
       </div>
-      
+
       <div className="recipe-content">
         <div className="ingredients-section">
           <h2>Ingredients</h2>
@@ -168,10 +152,9 @@ const RecipeDetail = () => {
             ))}
           </ul>
         </div>
-        
         <RecipeSteps steps={recipe.steps} />
       </div>
-      
+
       <div className="recipe-collaboration">
         <h3>Collaborators</h3>
         {recipe.collaborators.length === 0 ? (
@@ -184,11 +167,16 @@ const RecipeDetail = () => {
           </ul>
         )}
       </div>
-      
+
       <div className="recipe-actions">
         <Link to={`/recipes/${recipe._id}/edit`} className="edit-btn">Edit Recipe</Link>
         <button onClick={handleDeleteRecipe} className="delete-btn">Delete Recipe</button>
       </div>
+
+      <PendingEdits 
+        recipe={recipe} 
+        onEditApproved={fetchRecipe} 
+      />
     </div>
   );
 };

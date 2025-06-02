@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import recipeService from '../services/recipeService';
+// Add to your imports
 import { useAuth } from '../hooks/useAuth';
 
 const RecipeForm = () => {
@@ -100,17 +101,24 @@ const RecipeForm = () => {
     setFormData({ ...formData, steps: reorderedSteps });
   };
 
+  // Inside RecipeForm component, update handleSubmit:
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
     try {
       if (id) {
-        await recipeService.updateRecipe(id, formData);
+        const result = await recipeService.updateRecipe(id, formData);
+        if (result.status === 'pending') {
+          // Show message for pending approval
+          setError(result.message); // This will show "Edit suggestion submitted for owner approval"
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         await recipeService.createRecipe(formData);
+        navigate('/dashboard');
       }
-      navigate('/dashboard');
     } catch (err) {
       console.error('Save recipe error:', err.response?.data || err.message || err);
       setError(

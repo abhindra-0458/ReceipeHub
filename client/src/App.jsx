@@ -2,6 +2,7 @@ import React from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import Layout from './components/Layout'
+import { Navigate } from 'react-router-dom';
 
 // Pages
 import Home from './pages/Home'
@@ -21,9 +22,10 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/recipes" element={<Navigate to="/dashboard" replace />} />
             <Route path="/recipes/:id" element={<RecipeDetail />} />
             <Route path="/recipes/new" element={<RecipeForm />} />
-            <Route path="/recipes/edit/:id" element={<RecipeForm />} />
+            <Route path="/recipes/:id/edit" element={<RecipeForm />} />
           </Routes>
         </Layout>
       </Router>

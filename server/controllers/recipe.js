@@ -21,8 +21,9 @@ const createRecipe = async (req, res) => {
     
     res.status(201).json(recipe);
   } catch (error) {
+    console.error('Error creating recipe:', error);
     res.status(500).json({ message: 'Something went wrong' });
-  }
+  }  
 };
 
 const getRecipes = async (req, res) => {
@@ -87,11 +88,27 @@ const updateRecipe = async (req, res) => {
       collab => collab.user.toString() === req.userId && collab.permissions === 'edit'
     );
     
+    // If user is not owner or collaborator, but recipe is public,
+    // create a pending edit instead of direct update
     if (!isOwner && !isCollaborator) {
-      return res.status(403).json({ message: 'Not authorized' });
+      if (recipe.isPublic) {
+        // Add pending edit
+        recipe.pendingEdits.push({
+          proposedBy: req.userId,
+          changes: updates,
+          status: 'pending'
+        });
+        await recipe.save();
+        return res.status(200).json({
+          message: 'Edit suggestion submitted for owner approval',
+          status: 'pending'
+        });
+      } else {
+        return res.status(403).json({ message: 'Not authorized' });
+      }
     }
     
-    // Update recipe
+    // Direct update for owners and collaborators
     const updatedRecipe = await Recipe.findByIdAndUpdate(
       id,
       { ...updates, updatedAt: Date.now() },
@@ -103,6 +120,7 @@ const updateRecipe = async (req, res) => {
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
+
 
 const deleteRecipe = async (req, res) => {
   try {
@@ -127,4 +145,44 @@ const deleteRecipe = async (req, res) => {
   }
 };
 
-module.exports = { createRecipe, getRecipes, getRecipe, updateRecipe, deleteRecipe };
+const reviewPendingEdit = async (req, res) => {
+  try {
+    const { recipeId, editId } = req.params;
+    const { status } = req.body; // 'approved' or 'rejected'
+    
+    const recipe = await Recipe.findById(recipeId);
+    
+    if (!recipe) {
+      return res.status(404).json({ message: 'Recipe not found' });
+    }
+    
+    // Only owner can review edits
+    if (recipe.owner.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    const pendingEdit = recipe.pendingEdits.id(editId);
+    if (!pendingEdit) {
+      return res.status(404).json({ message: 'Pending edit not found' });
+    }
+    
+    if (status === 'approved') {
+      // Apply the changes
+      Object.assign(recipe, pendingEdit.changes);
+      pendingEdit.status = 'approved';
+    } else {
+      pendingEdit.status = 'rejected';
+    }
+    
+    await recipe.save();
+    
+    res.status(200).json({
+      message: `Edit suggestion ${status}`,
+      recipe: recipe
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
+module.exports = { createRecipe, getRecipes, getRecipe, updateRecipe, deleteRecipe, reviewPendingEdit };

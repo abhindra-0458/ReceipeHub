@@ -61,8 +61,8 @@ const RecipeSteps = ({ steps }) => {
   return (
     <div className="recipe-steps">
       <h3>Instructions</h3>
-      {steps.map(step => (
-        <RecipeStep key={step.order} step={step} />
+      {steps.map((step, index) => (
+        <RecipeStep key={step._id || index} step={step} />
       ))}
     </div>
   );

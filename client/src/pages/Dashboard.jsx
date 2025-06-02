@@ -23,17 +23,19 @@ const Dashboard = () => {
     if (isAuthenticated) {
       fetchRecipes();
     } else {
-      // If not authenticated, use dummy data or redirect
-      const dummyRecipes = [
-        { _id: '1', title: 'Chocolate Cake', description: 'Delicious chocolate cake recipe', isPublic: true, collaborators: ['user2', 'user3'] },
-        { _id: '2', title: 'Pasta Carbonara', description: 'Classic Italian pasta dish', isPublic: false, collaborators: [] },
-        { _id: '3', title: 'Vegetable Curry', description: 'Spicy vegetable curry', isPublic: true, collaborators: ['user4'] }
-      ];
+      // If not authenticated, fetch public recipes
+      const fetchPublicRecipes = async () => {
+        try {
+          const data = await recipeService.getPublicRecipes();
+          setRecipes(data);
+          setLoading(false);
+        } catch (err) {
+          console.error(err);
+          setLoading(false);
+        }
+      };
       
-      setTimeout(() => {
-        setRecipes(dummyRecipes);
-        setLoading(false);
-      }, 500);
+      fetchPublicRecipes();
     }
   }, [isAuthenticated]);
 

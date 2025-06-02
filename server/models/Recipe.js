@@ -8,7 +8,11 @@ const IngredientSchema = new Schema({
   },
   unit: {
     type: String,
-    required: true
+    required: true,
+    validate: {
+      validator: v => v.trim().length > 0,
+      message: 'Unit cannot be empty'
+    }
   },
   name: {
     type: String,
@@ -24,6 +28,32 @@ const StepSchema = new Schema({
   timer: {
     type: Number,
     default: 0
+  }
+});
+
+const PendingEditSchema = new Schema({
+  proposedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  changes: {
+    title: String,
+    description: String,
+    servings: Number,
+    prepTime: Number,
+    cookTime: Number,
+    ingredients: [IngredientSchema],
+    steps: [StepSchema]
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
 });
 
@@ -43,11 +73,13 @@ const RecipeSchema = new Schema({
   },
   prepTime: {
     type: Number,
-    required: true
+    required: true,
+    default: 0
   },
   cookTime: {
     type: Number,
-    required: true
+    required: true,
+    default: 0
   },
   isPublic: {
     type: Boolean,
@@ -60,9 +92,17 @@ const RecipeSchema = new Schema({
     ref: 'User',
     required: true
   },
+  pendingEdits: [PendingEditSchema],
   collaborators: [{
-    type: Schema.Types.ObjectId,
-    ref: 'User'
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    permissions: {
+      type: String,
+      enum: ['edit', 'suggest'],
+      default: 'suggest'
+    }
   }],
   createdAt: {
     type: Date,
@@ -72,6 +112,12 @@ const RecipeSchema = new Schema({
     type: Date,
     default: Date.now
   }
+});
+
+// Middleware to update updatedAt on save
+RecipeSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
 });
 
 module.exports = mongoose.model('Recipe', RecipeSchema);

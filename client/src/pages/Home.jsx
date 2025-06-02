@@ -6,10 +6,7 @@ const Home = () => {
       <div className="hero-section">
         <h1>Welcome to RecipeHub</h1>
         <p>Your collaborative recipe platform - like GitHub for recipes!</p>
-        <div className="cta-buttons">
-          <button className="primary-btn">Browse Recipes</button>
-          <button className="secondary-btn">Create Recipe</button>
-        </div>
+        
       </div>
       
       <div className="features-section">

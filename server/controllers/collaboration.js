@@ -101,4 +101,63 @@ const updateCollaboratorPermissions = async (req, res) => {
   }
 };
 
-module.exports = { inviteCollaborator, removeCollaborator, updateCollaboratorPermissions };
+// Add these new controller functions
+const suggestEdit = async (req, res) => {
+  try {
+    const { recipeId } = req.params;
+    const changes = req.body;
+    
+    const recipe = await Recipe.findById(recipeId);
+    if (!recipe) {
+      return res.status(404).json({ message: 'Recipe not found' });
+    }
+    
+    if (!recipe.isPublic && !recipe.collaborators.some(c => c.user.toString() === req.userId)) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    recipe.pendingEdits.push({
+      proposedBy: req.userId,
+      changes: changes
+    });
+    
+    await recipe.save();
+    
+    res.status(200).json({ message: 'Edit suggestion submitted for approval' });
+  } catch (error) {
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
+const reviewEdit = async (req, res) => {
+  try {
+    const { recipeId, editId } = req.params;
+    const { status } = req.body;
+    
+    const recipe = await Recipe.findById(recipeId);
+    if (!recipe || recipe.owner.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    const pendingEdit = recipe.pendingEdits.id(editId);
+    if (!pendingEdit) {
+      return res.status(404).json({ message: 'Edit suggestion not found' });
+    }
+    
+    if (status === 'approved') {
+      // Apply the changes
+      Object.assign(recipe, pendingEdit.changes);
+      pendingEdit.status = 'approved';
+    } else {
+      pendingEdit.status = 'rejected';
+    }
+    
+    await recipe.save();
+    
+    res.status(200).json({ message: `Edit suggestion ${status}` });
+  } catch (error) {
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
+module.exports = { inviteCollaborator, removeCollaborator, updateCollaboratorPermissions, suggestEdit, reviewEdit };
